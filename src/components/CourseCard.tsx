@@ -12,6 +12,9 @@ import {
   Users,
   Waves,
   Circle,
+  Database,
+  FileText,
+  Lightbulb,
 } from 'lucide-react'
 import { getWeekPatternLabel } from '../lib/schedule'
 import type { Course, CourseTone } from '../types/schedule'
@@ -22,10 +25,13 @@ const icons = {
   chart: ChartNoAxesColumn,
   circle: Circle,
   code: Code2,
+  database: Database,
+  'file-text': FileText,
   flask: FlaskConical,
   globe: Globe2,
   heart: Heart,
   language: Languages,
+  lightbulb: Lightbulb,
   monitor: Monitor,
   route: Route,
   users: Users,

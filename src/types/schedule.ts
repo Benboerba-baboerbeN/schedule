@@ -8,6 +8,10 @@ export type WeekPattern = 'all' | 'odd' | 'even'
 
 export type CourseTone = 'alice' | 'bob' | 'shared'
 
+export type AppStyle = 'bauhaus' | 'classic' | 'paper'
+
+export type AppFont = 'style-default' | 'system-sans' | 'serif' | 'rounded' | 'handwritten'
+
 export type ToneColor = {
   background: string
   border: string

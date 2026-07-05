@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   createSavedScheduleState,
   encryptPeopleIds,
+  loadImportedBaselineState,
   loadPreviousScheduleState,
   parseScheduleState,
+  saveImportedBaselineState,
   saveScheduleState,
   serializeScheduleState,
   serializeExportScheduleState,
@@ -91,6 +93,16 @@ describe('schedule storage', () => {
     expect(parsed?.people).toEqual({ alice: '\u5495\u5495', bob: '\u560e\u560e' })
   })
 
+  it('keeps the selected visual style in saved schedule data', () => {
+    const state = createSavedScheduleState('Paper Schedule', [aliceCourse], {
+      appStyle: 'paper',
+      updatedAt: '2026-07-04T00:00:00.000Z',
+    })
+    const parsed = parseScheduleState(serializeScheduleState(state))
+
+    expect(parsed?.appStyle).toBe('paper')
+  })
+
   it('encrypts people ids in exported files and decrypts them when imported', () => {
     const peopleIds = { alice: 'alice-secret-id', bob: 'bob-secret-id' }
     const state = createSavedScheduleState('Encrypted People', [aliceCourse], {
@@ -139,6 +151,31 @@ describe('schedule storage', () => {
     saveScheduleState(second, localStorageMock)
 
     expect(loadPreviousScheduleState(localStorageMock)?.title).toBe('First')
+  })
+
+  it('keeps the imported baseline separately from the latest local state', () => {
+    const storage = new Map<string, string>()
+    const localStorageMock: Storage = {
+      length: 0,
+      clear: () => storage.clear(),
+      getItem: (key: string) => storage.get(key) ?? null,
+      key: (index: number) => [...storage.keys()][index] ?? null,
+      removeItem: (key: string) => storage.delete(key),
+      setItem: (key: string, value: string) => {
+        storage.set(key, value)
+      },
+    }
+    const imported = createSavedScheduleState('Imported Start', [aliceCourse], {
+      updatedAt: '2026-07-04T00:00:00.000Z',
+    })
+    const edited = createSavedScheduleState('Edited Later', [bobCourse], {
+      updatedAt: '2026-07-04T00:01:00.000Z',
+    })
+
+    saveImportedBaselineState(imported, localStorageMock)
+    saveScheduleState(edited, localStorageMock)
+
+    expect(loadImportedBaselineState(localStorageMock)?.title).toBe('Imported Start')
   })
 
   it('keeps custom time ranges in the exported schedule file', () => {

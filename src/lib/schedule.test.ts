@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildTimelineMarks,
   buildScheduleCells,
+  findCourseIssues,
   getCourseTimelinePlacement,
   getWeekPatternLabel,
   mergeTimeSlots,
@@ -38,6 +39,86 @@ describe('schedule rules', () => {
     ]
 
     expect(buildScheduleCells(courses, slots)[0].tone).toBe('shared')
+  })
+
+  it('detects duplicate and overlapping courses for the same person', () => {
+    const courses: Course[] = [
+      {
+        id: 'a-first',
+        owner: 'alice',
+        title: 'Math',
+        classroom: '301',
+        day: 1,
+        startTime: '08:00',
+        endTime: '09:50',
+        weekPattern: 'all',
+        icon: 'book-open',
+      },
+      {
+        id: 'a-duplicate',
+        owner: 'alice',
+        title: 'Math',
+        classroom: '301',
+        day: 1,
+        startTime: '08:00',
+        endTime: '09:50',
+        weekPattern: 'all',
+        icon: 'book-open',
+      },
+      {
+        id: 'b-overlap',
+        owner: 'bob',
+        title: 'Physics',
+        classroom: '202',
+        day: 2,
+        startTime: '10:00',
+        endTime: '11:00',
+        weekPattern: 'all',
+        icon: 'book-open',
+      },
+      {
+        id: 'b-second',
+        owner: 'bob',
+        title: 'English',
+        classroom: '405',
+        day: 2,
+        startTime: '10:30',
+        endTime: '11:30',
+        weekPattern: 'odd',
+        icon: 'book-open',
+      },
+    ]
+
+    expect(findCourseIssues(courses).map((issue) => issue.type)).toEqual(['duplicate', 'overlap'])
+  })
+
+  it('does not mark odd-week and even-week courses as overlapping', () => {
+    const courses: Course[] = [
+      {
+        id: 'odd',
+        owner: 'alice',
+        title: 'Odd Week',
+        classroom: '301',
+        day: 1,
+        startTime: '08:00',
+        endTime: '09:50',
+        weekPattern: 'odd',
+        icon: 'book-open',
+      },
+      {
+        id: 'even',
+        owner: 'alice',
+        title: 'Even Week',
+        classroom: '301',
+        day: 1,
+        startTime: '08:00',
+        endTime: '09:50',
+        weekPattern: 'even',
+        icon: 'book-open',
+      },
+    ]
+
+    expect(findCourseIssues(courses)).toHaveLength(0)
   })
 
   it('hides weekly labels and keeps odd-even labels visible', () => {

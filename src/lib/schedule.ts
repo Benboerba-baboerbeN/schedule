@@ -1,5 +1,12 @@
 import type { Course, ScheduleCell, TimeRange, TimeSlot, WeekPattern } from '../types/schedule'
 
+export type CourseIssue = {
+  type: 'duplicate' | 'overlap'
+  owner: Course['owner']
+  day: number
+  courses: [Course, Course]
+}
+
 export const timelineStartMinutes = 8 * 60
 export const timelineEndMinutes = 22 * 60
 export const timelineStepMinutes = 5
@@ -130,6 +137,45 @@ export const findSharedCourses = (cells: ScheduleCell[]) =>
       ),
     }))
     .filter((item): item is { day: number; slotId: string; course: Course } => Boolean(item.course))
+
+const weekPatternsIntersect = (first: WeekPattern, second: WeekPattern) =>
+  first === 'all' || second === 'all' || first === second
+
+const courseTimesOverlap = (first: Course, second: Course) =>
+  timeToMinutes(first.startTime) < timeToMinutes(second.endTime) &&
+  timeToMinutes(second.startTime) < timeToMinutes(first.endTime)
+
+export const findCourseIssues = (courses: Course[]) => {
+  const issues: CourseIssue[] = []
+
+  for (let firstIndex = 0; firstIndex < courses.length; firstIndex += 1) {
+    for (let secondIndex = firstIndex + 1; secondIndex < courses.length; secondIndex += 1) {
+      const first = courses[firstIndex]
+      const second = courses[secondIndex]
+
+      if (
+        first.owner !== second.owner ||
+        first.day !== second.day ||
+        !weekPatternsIntersect(first.weekPattern, second.weekPattern) ||
+        !courseTimesOverlap(first, second)
+      ) {
+        continue
+      }
+
+      issues.push({
+        type:
+          first.startTime === second.startTime && first.endTime === second.endTime
+            ? 'duplicate'
+            : 'overlap',
+        owner: first.owner,
+        day: first.day,
+        courses: [first, second],
+      })
+    }
+  }
+
+  return issues
+}
 
 const toSlotId = (startTime: string, endTime: string) =>
   `slot-${startTime.replace(':', '-')}-${endTime.replace(':', '-')}`

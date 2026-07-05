@@ -3,31 +3,40 @@ import ColorSettings from './components/ColorSettings'
 import ConfirmDialog from './components/ConfirmDialog'
 import CourseEditor from './components/CourseEditor'
 import ExportConfirmDialog from './components/ExportConfirmDialog'
+import ExportImageDialog from './components/ExportImageDialog'
 import ImportDialog from './components/ImportDialog'
 import ScheduleGrid from './components/ScheduleGrid'
+import StyleSettings from './components/StyleSettings'
 import SummaryPanel from './components/SummaryPanel'
 import TimeRangeSettings from './components/TimeRangeSettings'
 import Toolbar from './components/Toolbar'
 import { courses, timeSlots } from './data/mockSchedule'
 import { deleteCourse, upsertCourse } from './lib/courseCrud'
+import { defaultAppStyle, defaultFontByStyle, resolveFont } from './lib/appStyle'
 import {
   decodeIcsFile,
   parseIcsCourses,
 } from './lib/icsParser'
 import { createDefaultPeopleIds, createScheduleTitle, defaultPeopleNames, normalizePeopleNames } from './lib/people'
-import { buildScheduleCells, defaultTimeRange, findSharedCourses, mergeTimeSlots } from './lib/schedule'
+import {
+  buildScheduleCells,
+  defaultTimeRange,
+  findCourseIssues,
+  mergeTimeSlots,
+} from './lib/schedule'
 import {
   createSavedScheduleState,
   createExportFilename,
   downloadScheduleFile,
+  loadImportedBaselineState,
   loadScheduleState,
-  loadPreviousScheduleState,
   parseScheduleState,
   readTextFile,
+  saveImportedBaselineState,
   saveScheduleState,
 } from './lib/storage'
-import { createThemeStyle, defaultScheduleTheme, mergeScheduleTheme } from './lib/theme'
-import type { Course, Owner, PeopleIds, PeopleNames } from './types/schedule'
+import { createThemeStyle, defaultScheduleTheme, getDefaultScheduleTheme, mergeScheduleTheme } from './lib/theme'
+import type { AppStyle, Course, Owner, PeopleIds, PeopleNames } from './types/schedule'
 
 const importText = {
   success: '\u5df2\u5bfc\u5165',
@@ -61,11 +70,12 @@ type ImportDialogState =
 type ConfirmState =
   | { type: 'clear' }
   | { type: 'importData'; state: NonNullable<ReturnType<typeof parseScheduleState>>; fileName: string }
-  | { type: 'restore'; state: NonNullable<ReturnType<typeof parseScheduleState>> }
+  | { type: 'reset' }
   | null
 
 function App() {
   const [savedState] = useState(() => loadScheduleState())
+  const [importedBaseline, setImportedBaseline] = useState(() => loadImportedBaselineState())
   const [activeCourses, setActiveCourses] = useState<Course[]>(() => savedState?.courses ?? courses)
   const [importStatus, setImportStatus] = useState<ImportStatus | null>(null)
   const [editorState, setEditorState] = useState<EditorState>(null)
@@ -73,15 +83,25 @@ function App() {
   const [confirmState, setConfirmState] = useState<ConfirmState>(null)
   const [isColorSettingsOpen, setIsColorSettingsOpen] = useState(false)
   const [isExportConfirmOpen, setIsExportConfirmOpen] = useState(false)
+  const [isExportImageOpen, setIsExportImageOpen] = useState(false)
+  const [isStyleSettingsOpen, setIsStyleSettingsOpen] = useState(false)
   const [isTimeRangeSettingsOpen, setIsTimeRangeSettingsOpen] = useState(false)
   const [people, setPeople] = useState<PeopleNames>(() => normalizePeopleNames(savedState?.people ?? defaultPeopleNames))
   const [peopleIds, setPeopleIds] = useState<PeopleIds>(() => savedState?.peopleIds ?? createDefaultPeopleIds())
   const [scheduleTheme, setScheduleTheme] = useState(() =>
     mergeScheduleTheme(savedState?.theme ?? defaultScheduleTheme),
   )
+  const [appStyle, setAppStyle] = useState(() => savedState?.appStyle ?? defaultAppStyle)
+  const [appFont, setAppFont] = useState(() => savedState?.appFont ?? 'style-default')
   const [timeRange, setTimeRange] = useState(() => savedState?.timeRange ?? defaultTimeRange)
   const scheduleTitle = useMemo(() => createScheduleTitle(people), [people])
-  const themeStyle = useMemo(() => createThemeStyle(scheduleTheme), [scheduleTheme])
+  const themeStyle = useMemo(
+    () => ({
+      ...createThemeStyle(scheduleTheme),
+      '--app-font-family': resolveFont(appFont, appStyle),
+    }),
+    [appFont, appStyle, scheduleTheme],
+  )
 
   const visibleTimeSlots = useMemo(
     () => mergeTimeSlots(timeSlots, activeCourses),
@@ -91,16 +111,22 @@ function App() {
     () => buildScheduleCells(activeCourses, visibleTimeSlots),
     [activeCourses, visibleTimeSlots],
   )
-  const sharedCourses = useMemo(() => findSharedCourses(scheduleCells), [scheduleCells])
+  const courseIssues = useMemo(() => findCourseIssues(activeCourses), [activeCourses])
+  const courseIssueMessage =
+    courseIssues.length > 0
+      ? `发现 ${courseIssues.length} 处同一人的重复或重叠课程，请检查课程文件或手动更改。`
+      : null
 
   useEffect(() => {
     saveScheduleState(createSavedScheduleState(scheduleTitle, activeCourses, {
       people,
       peopleIds,
+      appStyle,
+      appFont,
       theme: scheduleTheme,
       timeRange,
     }))
-  }, [activeCourses, people, peopleIds, scheduleTheme, scheduleTitle, timeRange])
+  }, [activeCourses, appFont, appStyle, people, peopleIds, scheduleTheme, scheduleTitle, timeRange])
 
   const handleImport = async (owner: Owner, file: File) => {
     const ownerName = people[owner]
@@ -122,10 +148,21 @@ function App() {
         return
       }
 
-      setActiveCourses((currentCourses) => [
-        ...currentCourses.filter((course) => course.owner !== owner),
+      const nextCourses = [
+        ...activeCourses.filter((course) => course.owner !== owner),
         ...importedCourses,
-      ])
+      ]
+      const baseline = createSavedScheduleState(createScheduleTitle(people), nextCourses, {
+        people,
+        peopleIds,
+        appStyle,
+        appFont,
+        theme: scheduleTheme,
+        timeRange,
+      })
+
+      setActiveCourses(nextCourses)
+      rememberImportedBaseline(baseline)
       setImportStatus(
         {
           tone: 'success',
@@ -140,14 +177,49 @@ function App() {
     }
   }
 
-  const handleReset = () => {
-    setActiveCourses(courses)
-    setPeople(defaultPeopleNames)
-    setPeopleIds(createDefaultPeopleIds())
-    setScheduleTheme(defaultScheduleTheme)
-    setTimeRange(defaultTimeRange)
+  const defaultBaselineState = () =>
+    createSavedScheduleState(createScheduleTitle(defaultPeopleNames), courses, {
+      people: defaultPeopleNames,
+      peopleIds: createDefaultPeopleIds(),
+      appStyle: defaultAppStyle,
+      appFont: 'style-default',
+      theme: defaultScheduleTheme,
+      timeRange: defaultTimeRange,
+    })
+
+  const rememberImportedBaseline = (state: NonNullable<ReturnType<typeof parseScheduleState>>) => {
+    setImportedBaseline(state)
+    saveImportedBaselineState(state)
+  }
+
+  const restoreScheduleState = (
+    state: NonNullable<ReturnType<typeof parseScheduleState>>,
+    message: string,
+  ) => {
+    setPeople(normalizePeopleNames(state.people))
+    setPeopleIds(state.peopleIds)
+    setActiveCourses(state.courses)
+    setAppStyle(state.appStyle)
+    setAppFont(state.appFont)
+    setScheduleTheme(mergeScheduleTheme(state.theme))
+    setTimeRange(state.timeRange)
     setEditorState(null)
-    setImportStatus({ tone: 'success', message: importText.reset })
+    setConfirmState(null)
+    setImportStatus({ tone: 'success', message })
+  }
+
+  const handleReset = () => {
+    setConfirmState({ type: 'reset' })
+  }
+
+  const applyReset = () => {
+    const state = importedBaseline ?? defaultBaselineState()
+    restoreScheduleState(
+      state,
+      importedBaseline
+        ? `已恢复到最近一次导入课表后的初始状态：${state.title}`
+        : '已恢复到初始默认网页',
+    )
   }
 
   const handleClear = () => {
@@ -178,6 +250,8 @@ function App() {
       downloadScheduleFile(createSavedScheduleState(scheduleTitle, activeCourses, {
         people,
         peopleIds,
+        appStyle,
+        appFont,
         theme: scheduleTheme,
         timeRange,
       }), filename)
@@ -222,38 +296,37 @@ function App() {
     setPeople(normalizePeopleNames(state.people))
     setPeopleIds(state.peopleIds)
     setActiveCourses(state.courses)
+    setAppStyle(state.appStyle)
+    setAppFont(state.appFont)
     setScheduleTheme(mergeScheduleTheme(state.theme))
     setTimeRange(state.timeRange)
     setEditorState(null)
     setConfirmState(null)
+    rememberImportedBaseline(state)
     setImportStatus({
       tone: 'success',
       message: `${importText.importedState}：${state.title}，共 ${state.courses.length} 门课程。文件：${fileName}`,
     })
   }
 
-  const handleRestorePrevious = () => {
-    const previousState = loadPreviousScheduleState()
-
-    if (!previousState) {
-      setImportStatus({ tone: 'error', message: '没有找到可恢复的上一次自动保存。' })
-      return
-    }
-
-    setConfirmState({ type: 'restore', state: previousState })
+  const handleStyleChange = (style: AppStyle) => {
+    setAppStyle(style)
+    setAppFont(defaultFontByStyle[style])
+    setScheduleTheme(getDefaultScheduleTheme(style))
   }
 
   return (
-    <main className="app-shell" style={themeStyle}>
+    <main className={`app-shell app-shell--${appStyle}`} style={themeStyle}>
       <Toolbar
         onAddCourse={() => setEditorState({ mode: 'create' })}
         onOpenColors={() => setIsColorSettingsOpen(true)}
+        onOpenExportImage={() => setIsExportImageOpen(true)}
         onOpenExportState={() => setIsExportConfirmOpen(true)}
         onOpenImportCourse={(owner) => setImportDialogState({ type: 'course', owner })}
         onOpenImportData={() => setImportDialogState({ type: 'data' })}
+        onOpenStyles={() => setIsStyleSettingsOpen(true)}
         onOpenTimeRange={() => setIsTimeRangeSettingsOpen(true)}
         onPeopleChange={setPeople}
-        onRestorePrevious={handleRestorePrevious}
         onReset={handleReset}
         onClear={handleClear}
         people={people}
@@ -262,6 +335,11 @@ function App() {
       {importStatus ? (
         <p className={`import-status import-status--${importStatus.tone}`} aria-live="polite">
           {importStatus.message}
+        </p>
+      ) : null}
+      {courseIssueMessage ? (
+        <p className="import-status import-status--error" aria-live="polite">
+          {courseIssueMessage}
         </p>
       ) : null}
       <ScheduleGrid
@@ -273,8 +351,6 @@ function App() {
       <SummaryPanel
         cells={scheduleCells}
         people={people}
-        sharedCourses={sharedCourses}
-        timeSlots={visibleTimeSlots}
       />
       {editorState ? (
         <CourseEditor
@@ -289,7 +365,10 @@ function App() {
       {isColorSettingsOpen ? (
         <ColorSettings
           people={people}
+          appStyle={appStyle}
+          font={appFont}
           theme={scheduleTheme}
+          onFontChange={setAppFont}
           onChange={setScheduleTheme}
           onClose={() => setIsColorSettingsOpen(false)}
         />
@@ -323,6 +402,24 @@ function App() {
           onConfirm={handleExportState}
         />
       ) : null}
+      {isExportImageOpen ? (
+        <ExportImageDialog
+          appStyle={appStyle}
+          courses={activeCourses}
+          people={people}
+          timeRange={timeRange}
+          title={scheduleTitle}
+          onClose={() => setIsExportImageOpen(false)}
+          onStatus={(message, tone) => setImportStatus({ message, tone })}
+        />
+      ) : null}
+      {isStyleSettingsOpen ? (
+        <StyleSettings
+          value={appStyle}
+          onChange={handleStyleChange}
+          onClose={() => setIsStyleSettingsOpen(false)}
+        />
+      ) : null}
       {confirmState?.type === 'clear' ? (
         <ConfirmDialog
           title="清空当前课表"
@@ -342,13 +439,15 @@ function App() {
           onConfirm={() => applyImportedState(confirmState.state, confirmState.fileName)}
         />
       ) : null}
-      {confirmState?.type === 'restore' ? (
+      {confirmState?.type === 'reset' ? (
         <ConfirmDialog
-          title="恢复上一次自动保存"
-          description={`将恢复“${confirmState.state.title}”。当前内容会被新的自动保存记录替换。`}
+          title="恢复初始状态"
+          description={importedBaseline
+            ? `将恢复到最近一次导入课表后的初始状态：“${importedBaseline.title}”。当前手动修改会被覆盖。`
+            : '将恢复到初始默认网页。当前课程、名称、颜色、风格和时间范围会被默认内容覆盖。'}
           confirmText="确认恢复"
           onCancel={() => setConfirmState(null)}
-          onConfirm={() => applyImportedState(confirmState.state, '上一次自动保存')}
+          onConfirm={applyReset}
         />
       ) : null}
       {isTimeRangeSettingsOpen ? (

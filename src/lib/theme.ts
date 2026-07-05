@@ -1,72 +1,124 @@
-import type { CSSProperties } from 'react'
-import type { ColorSchemePreset, CourseTone, ScheduleTheme, ToneColor } from '../types/schedule'
+﻿import type { CSSProperties } from 'react'
+import type { AppStyle, ColorSchemePreset, CourseTone, ScheduleTheme, ToneColor } from '../types/schedule'
 
 const tones: CourseTone[] = ['alice', 'bob', 'shared']
 
 export const defaultScheduleTheme: ScheduleTheme = {
   alice: {
-    background: '#e8f3ff',
-    border: '#9bc9ff',
-    text: '#174d95',
-    headerBackground: '#c7e2ff',
-    headerText: '#123e73',
+    background: '#fff2b8',
+    border: '#f0c020',
+    text: '#141414',
+    headerBackground: '#f3d765',
+    headerText: '#141414',
   },
   bob: {
-    background: '#e8f7e8',
-    border: '#a9dca7',
-    text: '#166534',
-    headerBackground: '#c8edc7',
-    headerText: '#14532d',
+    background: '#dce6ff',
+    border: '#1040c0',
+    text: '#0c2f8f',
+    headerBackground: '#8fa9df',
+    headerText: '#102a70',
   },
   shared: {
-    background: '#fff4d8',
-    border: '#f4c96c',
-    text: '#9a5a00',
-    headerBackground: '#ffe4a3',
-    headerText: '#8a4b00',
+    background: '#ffe0dc',
+    border: '#d02020',
+    text: '#8f1414',
+    headerBackground: '#e58f86',
+    headerText: '#7a1010',
   },
 }
 
+export const scheduleThemeByStyle: Record<AppStyle, ScheduleTheme> = {
+  bauhaus: defaultScheduleTheme,
+  classic: {
+    alice: {
+      background: '#eef6ff',
+      border: '#a9c7ec',
+      text: '#24476f',
+      headerBackground: '#dbeafe',
+      headerText: '#1e3a5f',
+    },
+    bob: {
+      background: '#f0f9f4',
+      border: '#a8d8bd',
+      text: '#24563c',
+      headerBackground: '#dff4e8',
+      headerText: '#1f5138',
+    },
+    shared: {
+      background: '#fff7e8',
+      border: '#e8c077',
+      text: '#6f4a16',
+      headerBackground: '#f8e4b8',
+      headerText: '#614313',
+    },
+  },
+  paper: {
+    alice: {
+      background: '#f9df91',
+      border: '#9a7740',
+      text: '#4d371c',
+      headerBackground: '#edc966',
+      headerText: '#4d371c',
+    },
+    bob: {
+      background: '#cfe0df',
+      border: '#6f8d8a',
+      text: '#314f4c',
+      headerBackground: '#a8c8c5',
+      headerText: '#2d4745',
+    },
+    shared: {
+      background: '#f3c0aa',
+      border: '#a76450',
+      text: '#6a3328',
+      headerBackground: '#de8b77',
+      headerText: '#5a2a22',
+    },
+  },
+}
+
+export const getDefaultScheduleTheme = (style: AppStyle = 'bauhaus') => scheduleThemeByStyle[style]
+
 export const colorSchemePresets: ColorSchemePreset[] = [
   {
-    id: 'cool-blue',
-    name: 'Cool Blue 冷蓝',
-    description: '清爽、低干扰，适合默认课表阅读。',
+    id: 'bauhaus-blue',
+    name: 'Bauhaus Blue',
+    description: '主页面同款蓝色系，适合第一个角色的课程块。',
     colors: {
-      background: '#e8f3ff',
-      border: '#9bc9ff',
-      text: '#174d95',
-      headerBackground: '#c7e2ff',
-      headerText: '#123e73',
+      background: '#dce6ff',
+      border: '#1040c0',
+      text: '#0c2f8f',
+      headerBackground: '#8fa9df',
+      headerText: '#102a70',
     },
   },
   {
-    id: 'jade',
-    name: 'Jade 玉石绿',
-    description: '来自 2026 热门 Jade 趋势，稳定又有生命力。',
+    id: 'bauhaus-red',
+    name: 'Bauhaus Red',
+    description: '主页面同款红色系，醒目直接，适合第二个角色。',
     colors: {
-      background: '#e6f6ef',
-      border: '#8dd3b4',
-      text: '#0f5c46',
-      headerBackground: '#b8ead5',
-      headerText: '#104536',
+      background: '#ffe0dc',
+      border: '#d02020',
+      text: '#8f1414',
+      headerBackground: '#e58f86',
+      headerText: '#7a1010',
     },
   },
   {
-    id: 'sage',
-    name: 'Sage 鼠尾草',
-    description: '柔和自然，适合长时间查看。',
+    id: 'bauhaus-yellow',
+    name: 'Bauhaus Yellow',
+    description: '主页面同款黄色系，适合共同课程和重点时段。',
     colors: {
-      background: '#eef6ea',
-      border: '#b7d7a8',
-      text: '#315c2c',
-      headerBackground: '#d4eac8',
-      headerText: '#294c25',
+      background: '#fff2b8',
+      border: '#f0c020',
+      text: '#141414',
+      headerBackground: '#f3d765',
+      headerText: '#141414',
     },
   },
   {
     id: 'teal',
-    name: 'Teal 湖水青',
+    name: 'Teal',
     description: '蓝绿之间的平衡色，清晰但不刺眼。',
     colors: {
       background: '#e5f7f7',
@@ -78,7 +130,7 @@ export const colorSchemePresets: ColorSchemePreset[] = [
   },
   {
     id: 'plum',
-    name: 'Plum 梅子紫',
+    name: 'Plum',
     description: '偏沉稳的紫调，适合作为强调色。',
     colors: {
       background: '#f5eaf5',
@@ -90,7 +142,7 @@ export const colorSchemePresets: ColorSchemePreset[] = [
   },
   {
     id: 'terracotta',
-    name: 'Terracotta 陶土',
+    name: 'Terracotta',
     description: '温暖、活跃，适合共同课程或重点课程。',
     colors: {
       background: '#fff0e7',
@@ -102,7 +154,7 @@ export const colorSchemePresets: ColorSchemePreset[] = [
   },
   {
     id: 'persimmon',
-    name: 'Persimmon 柿橙',
+    name: 'Persimmon',
     description: '明快醒目，适合需要高辨识度的角色。',
     colors: {
       background: '#fff1e6',
@@ -114,7 +166,7 @@ export const colorSchemePresets: ColorSchemePreset[] = [
   },
   {
     id: 'slate',
-    name: 'Slate 石板灰',
+    name: 'Slate',
     description: '中性克制，适合安静的管理界面。',
     colors: {
       background: '#f1f5f9',

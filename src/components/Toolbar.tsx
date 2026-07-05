@@ -1,13 +1,14 @@
 ﻿import {
   CalendarPlus,
   Download,
+  ImageDown,
   FileJson,
   FileUp,
   Palette,
+  Paintbrush,
   RotateCcw,
   Settings2,
   Trash2,
-  Undo2,
 } from 'lucide-react'
 import { useEffect, useState, type KeyboardEvent } from 'react'
 import type { Owner, PeopleNames } from '../types/schedule'
@@ -15,11 +16,12 @@ import type { Owner, PeopleNames } from '../types/schedule'
 type ToolbarProps = {
   onAddCourse: () => void
   onOpenColors: () => void
+  onOpenExportImage: () => void
   onOpenExportState: () => void
   onOpenImportCourse: (owner: Owner) => void
   onOpenImportData: () => void
+  onOpenStyles: () => void
   onOpenTimeRange: () => void
-  onRestorePrevious: () => void
   onReset: () => void
   onClear: () => void
   onPeopleChange: (people: PeopleNames) => void
@@ -30,10 +32,11 @@ type ToolbarProps = {
 const text = {
   addCourse: '添加课程',
   colors: '颜色设置',
+  image: '导出图片',
+  styles: '风格选项',
   timeSlots: '时间段',
   clear: '清空',
-  reset: '重置示例课表',
-  restore: '恢复上次保存',
+  reset: '恢复默认',
   titleHint: '双击名字修改',
 }
 
@@ -84,7 +87,7 @@ function EditablePersonName({
     <button
       className={`person-title person-title--${owner}`}
       type="button"
-      title={text.titleHint}
+      title={`${people[owner]}，${text.titleHint}`}
       onDoubleClick={() => setIsEditing(true)}
     >
       {people[owner]}
@@ -95,11 +98,12 @@ function EditablePersonName({
 function Toolbar({
   onAddCourse,
   onOpenColors,
+  onOpenExportImage,
   onOpenExportState,
   onOpenImportCourse,
   onOpenImportData,
+  onOpenStyles,
   onOpenTimeRange,
-  onRestorePrevious,
   onReset,
   onClear,
   onPeopleChange,
@@ -121,11 +125,21 @@ function Toolbar({
         </h1>
       </div>
       <div className="toolbar-actions">
-        <button className="tool-button" type="button" onClick={() => onOpenImportCourse('alice')}>
+        <button
+          className="tool-button"
+          type="button"
+          title={`导入${people.alice}的课程表`}
+          onClick={() => onOpenImportCourse('alice')}
+        >
           <FileUp aria-hidden="true" size={17} />
           <span>{`导入${people.alice}的课程表`}</span>
         </button>
-        <button className="tool-button" type="button" onClick={() => onOpenImportCourse('bob')}>
+        <button
+          className="tool-button"
+          type="button"
+          title={`导入${people.bob}的课程表`}
+          onClick={() => onOpenImportCourse('bob')}
+        >
           <FileUp aria-hidden="true" size={17} />
           <span>{`导入${people.bob}的课程表`}</span>
         </button>
@@ -137,6 +151,10 @@ function Toolbar({
           <Download aria-hidden="true" size={17} />
           <span>导出双人数据</span>
         </button>
+        <button className="tool-button" type="button" onClick={onReset}>
+          <RotateCcw aria-hidden="true" size={17} />
+          <span>{text.reset}</span>
+        </button>
         <button className="tool-button" type="button" onClick={onAddCourse}>
           <CalendarPlus aria-hidden="true" size={17} />
           <span>{text.addCourse}</span>
@@ -144,6 +162,10 @@ function Toolbar({
         <button className="tool-button" type="button" onClick={onOpenColors}>
           <Palette aria-hidden="true" size={17} />
           <span>{text.colors}</span>
+        </button>
+        <button className="tool-button" type="button" onClick={onOpenStyles}>
+          <Paintbrush aria-hidden="true" size={17} />
+          <span>{text.styles}</span>
         </button>
         <button className="tool-button" type="button" onClick={onOpenTimeRange}>
           <Settings2 aria-hidden="true" size={17} />
@@ -153,12 +175,9 @@ function Toolbar({
           <Trash2 aria-hidden="true" size={17} />
           <span>{text.clear}</span>
         </button>
-        <button className="tool-button" type="button" onClick={onRestorePrevious}>
-          <Undo2 aria-hidden="true" size={17} />
-          <span>{text.restore}</span>
-        </button>
-        <button className="icon-button" type="button" aria-label={text.reset} onClick={onReset}>
-          <RotateCcw aria-hidden="true" size={18} />
+        <button className="tool-button tool-button--image-export" type="button" onClick={onOpenExportImage}>
+          <ImageDown aria-hidden="true" size={22} />
+          <span>{text.image}</span>
         </button>
       </div>
     </header>

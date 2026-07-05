@@ -6,12 +6,24 @@
   normalizePeopleIds,
   normalizePeopleNames,
 } from './people'
+import { defaultAppStyle, isAppFont, isAppStyle } from './appStyle'
 import { defaultTimeRange, timeToMinutes } from './schedule'
 import { defaultScheduleTheme, mergeScheduleTheme, parseScheduleTheme } from './theme'
-import type { Course, Owner, PeopleIds, PeopleNames, ScheduleTheme, TimeRange, WeekPattern } from '../types/schedule'
+import type {
+  AppStyle,
+  AppFont,
+  Course,
+  Owner,
+  PeopleIds,
+  PeopleNames,
+  ScheduleTheme,
+  TimeRange,
+  WeekPattern,
+} from '../types/schedule'
 
 export const storageKey = 'dual-schedule-state'
 export const previousStorageKey = 'dual-schedule-previous-state'
+export const importedBaselineStorageKey = 'dual-schedule-imported-baseline'
 
 const encryptionPrefix = 'ds1:'
 const encryptionKey = 'dual-schedule-local-export'
@@ -23,12 +35,16 @@ export type SavedScheduleState = {
   peopleIds: PeopleIds
   courses: Course[]
   theme: ScheduleTheme
+  appStyle: AppStyle
+  appFont: AppFont
   timeRange: TimeRange
   updatedAt: string
 }
 
 type SavedScheduleOptions = {
   theme?: ScheduleTheme
+  appStyle?: AppStyle
+  appFont?: AppFont
   timeRange?: TimeRange
   people?: PeopleNames
   peopleIds?: PeopleIds
@@ -121,6 +137,8 @@ export const createSavedScheduleState = (
   peopleIds: typeof options === 'string' ? createDefaultPeopleIds() : normalizePeopleIds(options.peopleIds),
   courses,
   theme: typeof options === 'string' ? defaultScheduleTheme : options.theme ?? defaultScheduleTheme,
+  appStyle: typeof options === 'string' ? defaultAppStyle : options.appStyle ?? defaultAppStyle,
+  appFont: typeof options === 'string' ? 'style-default' : options.appFont ?? 'style-default',
   timeRange: typeof options === 'string' ? defaultTimeRange : options.timeRange ?? defaultTimeRange,
   updatedAt: typeof options === 'string' ? options : options.updatedAt ?? new Date().toISOString(),
 })
@@ -153,6 +171,16 @@ export const parseScheduleState = (raw: string): SavedScheduleState | null => {
       : isTimeRange(parsed.timeRange)
         ? parsed.timeRange
         : null
+    const appStyle = parsed.appStyle === undefined
+      ? defaultAppStyle
+      : isAppStyle(parsed.appStyle)
+        ? parsed.appStyle
+        : null
+    const appFont = parsed.appFont === undefined
+      ? 'style-default'
+      : isAppFont(parsed.appFont)
+        ? parsed.appFont
+        : null
     const people = parsed.people === undefined
       ? defaultPeopleNames
       : isPeopleNames(parsed.people)
@@ -171,6 +199,8 @@ export const parseScheduleState = (raw: string): SavedScheduleState | null => {
       !Array.isArray(parsed.courses) ||
       !parsed.courses.every(isCourse) ||
       !theme ||
+      !appStyle ||
+      !appFont ||
       !timeRange ||
       !people ||
       !peopleIds
@@ -185,6 +215,8 @@ export const parseScheduleState = (raw: string): SavedScheduleState | null => {
       peopleIds,
       courses: parsed.courses,
       theme: mergeScheduleTheme(theme),
+      appStyle,
+      appFont,
       timeRange,
       updatedAt: parsed.updatedAt,
     }
@@ -201,6 +233,18 @@ export const loadScheduleState = (storage: Storage = window.localStorage) => {
 export const loadPreviousScheduleState = (storage: Storage = window.localStorage) => {
   const raw = storage.getItem(previousStorageKey)
   return raw ? parseScheduleState(raw) : null
+}
+
+export const loadImportedBaselineState = (storage: Storage = window.localStorage) => {
+  const raw = storage.getItem(importedBaselineStorageKey)
+  return raw ? parseScheduleState(raw) : null
+}
+
+export const saveImportedBaselineState = (
+  state: SavedScheduleState,
+  storage: Storage = window.localStorage,
+) => {
+  storage.setItem(importedBaselineStorageKey, serializeScheduleState(state))
 }
 
 export const saveScheduleState = (

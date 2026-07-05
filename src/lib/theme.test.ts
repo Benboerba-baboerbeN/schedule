@@ -3,10 +3,10 @@ import { colorSchemePresets, findMatchingPresetId } from './theme'
 
 describe('schedule theme presets', () => {
   it('detects a selected preset and falls back to custom after manual edits', () => {
-    const jade = colorSchemePresets.find((preset) => preset.id === 'jade')
+    const bauhausBlue = colorSchemePresets.find((preset) => preset.id === 'bauhaus-blue')
 
-    expect(jade).toBeDefined()
-    expect(findMatchingPresetId(jade!.colors)).toBe('jade')
-    expect(findMatchingPresetId({ ...jade!.colors, background: '#ffffff' })).toBe('custom')
+    expect(bauhausBlue).toBeDefined()
+    expect(findMatchingPresetId(bauhausBlue!.colors)).toBe('bauhaus-blue')
+    expect(findMatchingPresetId({ ...bauhausBlue!.colors, background: '#ffffff' })).toBe('custom')
   })
 })

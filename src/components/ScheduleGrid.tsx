@@ -119,8 +119,8 @@ function ScheduleGrid({ courses, people, timeRange, onCourseClick }: ScheduleGri
             <strong>{weekDay.label}</strong>
             <div className="person-headings">
               {ownerOrder.map((owner) => (
-                <span className={`person-heading person-heading--${owner}`} key={owner}>
-                  {people[owner]}
+                <span className={`person-heading person-heading--${owner}`} key={owner} title={people[owner]}>
+                  <span className="person-heading__name">{people[owner]}</span>
                 </span>
               ))}
             </div>
