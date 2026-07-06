@@ -3,6 +3,8 @@ import {
   buildTimelineMarks,
   buildScheduleCells,
   findCourseIssues,
+  getCourseCardScale,
+  isCompactCourseCard,
   getCourseTimelinePlacement,
   getWeekPatternLabel,
   mergeTimeSlots,
@@ -154,6 +156,19 @@ describe('schedule rules', () => {
       rowStart: 3,
       rowSpan: 18,
     })
+  })
+
+  it('scales compact course cards for short timeline spans', () => {
+    expect(getCourseCardScale(4)).toBeCloseTo(0.56)
+    expect(getCourseCardScale(10)).toBeLessThan(0.8)
+    expect(getCourseCardScale(12)).toBeLessThan(1)
+    expect(getCourseCardScale(18)).toBe(1)
+  })
+
+  it('uses compact course cards for courses at or under one hour', () => {
+    expect(isCompactCourseCard(10)).toBe(true)
+    expect(isCompactCourseCard(12)).toBe(true)
+    expect(isCompactCourseCard(13)).toBe(false)
   })
 
   it('includes the 22:00 terminal label on the timeline axis', () => {

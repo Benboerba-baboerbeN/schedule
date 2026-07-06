@@ -83,6 +83,26 @@ describe('schedule storage', () => {
     expect(parsed?.theme.alice.headerBackground).toBe('#bfdbfe')
   })
 
+  it('normalizes older courses without entry type as courses', () => {
+    const state = createSavedScheduleState('Legacy Schedule', [aliceCourse], {
+      updatedAt: '2026-07-04T00:00:00.000Z',
+    })
+    const legacy = JSON.stringify({
+      ...state,
+      courses: state.courses.map(({ entryType: _entryType, ...course }) => course),
+      theme: {
+        alice: state.theme.alice,
+        bob: state.theme.bob,
+        shared: state.theme.shared,
+      },
+    })
+
+    const parsed = parseScheduleState(legacy)
+
+    expect(parsed?.courses[0].entryType).toBe('course')
+    expect(parsed?.theme.activity.background).toBe(defaultScheduleTheme.activity.background)
+  })
+
   it('keeps custom people names in the exported schedule file', () => {
     const state = createSavedScheduleState('Custom People', [aliceCourse, bobCourse], {
       people: { alice: '\u5495\u5495', bob: '\u560e\u560e' },

@@ -6,7 +6,9 @@ export type PeopleIds = Record<Owner, string>
 
 export type WeekPattern = 'all' | 'odd' | 'even'
 
-export type CourseTone = 'alice' | 'bob' | 'shared'
+export type CourseEntryType = 'course' | 'activity'
+
+export type CourseTone = 'alice' | 'bob' | 'shared' | 'activity'
 
 export type AppStyle = 'bauhaus' | 'classic' | 'paper'
 
@@ -32,6 +34,7 @@ export type ColorSchemePreset = {
 export type Course = {
   id: string
   owner: Owner
+  entryType?: CourseEntryType
   title: string
   classroom: string
   day: number

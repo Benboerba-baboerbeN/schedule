@@ -3,10 +3,10 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { toPng } from 'html-to-image'
 import ScheduleGrid from './ScheduleGrid'
 import { useEscapeClose } from '../hooks/useEscapeClose'
-import { timelineRowCount } from '../lib/schedule'
+import { createExportImageMetrics, resolveExportRatio, type ExportRatioId } from '../lib/exportImageMetrics'
 import type { AppStyle, Course, PeopleNames, TimeRange } from '../types/schedule'
 
-type ExportRatio = 'auto' | '1-1' | '4-3' | '16-9'
+type ExportRatio = ExportRatioId
 
 type ExportImageDialogProps = {
   appStyle: AppStyle
@@ -20,6 +20,7 @@ type ExportImageDialogProps = {
 
 type ExportCaptureStyle = CSSProperties & {
   '--export-row-height': string
+  '--export-course-scale': string
 }
 
 const text = {
@@ -29,6 +30,10 @@ const text = {
   close: '\u5173\u95ed\u5bfc\u51fa\u56fe\u7247\u83dc\u5355',
   ratio: '\u5bfc\u51fa\u6bd4\u4f8b',
   defaultRatio: '\u9ed8\u8ba4',
+  customRatio: '\u81ea\u5b9a\u4e49',
+  verticalRatio: '\u7ad6',
+  horizontalRatio: '\u6a2a',
+  invalidRatio: '\u81ea\u5b9a\u4e49\u6bd4\u4f8b\u9700\u8981\u586b\u5199\u5927\u4e8e 0 \u7684\u7ad6\u5411\u548c\u6a2a\u5411\u6570\u503c\u3002',
   exportFailedSoon: '\u5bfc\u51fa\u56fe\u7247\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002',
   exportFailedPermission: '\u5bfc\u51fa\u56fe\u7247\u5931\u8d25\uff0c\u8bf7\u68c0\u67e5\u6d4f\u89c8\u5668\u4e0b\u8f7d\u6743\u9650\u540e\u91cd\u8bd5\u3002',
   exported: '\u5df2\u5bfc\u51fa\u8bfe\u8868\u56fe\u7247\u3002',
@@ -42,6 +47,7 @@ const ratioOptions: Array<{ id: ExportRatio; label: string; ratio: number | null
   { id: '1-1', label: '1:1', ratio: 1 },
   { id: '4-3', label: '4:3', ratio: 4 / 3 },
   { id: '16-9', label: '16:9', ratio: 16 / 9 },
+  { id: 'custom', label: text.customRatio, ratio: null },
 ]
 
 const headerHeight = 88
@@ -76,23 +82,29 @@ function ExportImageDialog({
   const captureRef = useRef<HTMLDivElement | null>(null)
   const subjectRef = useRef<HTMLDivElement | null>(null)
   const [ratioId, setRatioId] = useState<ExportRatio>('auto')
+  const [customHeight, setCustomHeight] = useState('4')
+  const [customWidth, setCustomWidth] = useState('3')
   const [subjectWidth, setSubjectWidth] = useState(1360)
   const padding = 40
 
-  const ratio = ratioOptions.find((option) => option.id === ratioId)?.ratio ?? null
-  const rowCount = timelineRowCount(timeRange)
-  const rowHeight = useMemo(() => {
-    if (!ratio) {
-      return defaultRowHeight
-    }
-
-    const targetSubjectHeight = subjectWidth * ratio
-    return Math.max(3, (targetSubjectHeight - headerHeight - timelinePadding) / rowCount)
-  }, [ratio, rowCount, subjectWidth])
+  const customRatioInput = useMemo(() => ({
+    vertical: Number(customHeight),
+    horizontal: Number(customWidth),
+  }), [customHeight, customWidth])
+  const ratio = resolveExportRatio(ratioId, customRatioInput)
+  const isCustomRatioInvalid = ratioId === 'custom' && ratio === null
+  const metrics = useMemo(() => createExportImageMetrics({
+    subjectWidth,
+    ratio,
+    timeRange,
+    headerHeight,
+    timelinePadding,
+    defaultRowHeight,
+  }), [ratio, subjectWidth, timeRange])
   const subjectSize = useMemo(() => ({
     width: subjectWidth,
-    height: Math.ceil(headerHeight + rowCount * rowHeight + timelinePadding),
-  }), [rowCount, rowHeight, subjectWidth])
+    height: metrics.subjectHeight,
+  }), [metrics.subjectHeight, subjectWidth])
   const exportSize = useMemo(() => ({
     width: Math.ceil(subjectSize.width + padding * 2),
     height: Math.ceil(subjectSize.height + padding * 2),
@@ -105,7 +117,8 @@ function ExportImageDialog({
   const captureStyle: ExportCaptureStyle = {
     width: exportSize.width,
     height: exportSize.height,
-    '--export-row-height': `${rowHeight}px`,
+    '--export-row-height': `${metrics.rowHeight}px`,
+    '--export-course-scale': metrics.courseScale.toFixed(3),
   }
 
   useEffect(() => {
@@ -125,6 +138,11 @@ function ExportImageDialog({
 
   const handleExport = async () => {
     const node = captureRef.current
+
+    if (isCustomRatioInvalid) {
+      onStatus(text.invalidRatio, 'error')
+      return
+    }
 
     if (!node) {
       onStatus(text.exportFailedSoon, 'error')
@@ -177,6 +195,32 @@ function ExportImageDialog({
               </button>
             ))}
           </div>
+          {ratioId === 'custom' ? (
+            <div className="custom-ratio-fields" role="group" aria-label={text.customRatio}>
+              <label>
+                <span>{text.verticalRatio}</span>
+                <input
+                  min="1"
+                  step="1"
+                  type="number"
+                  value={customHeight}
+                  onChange={(event) => setCustomHeight(event.target.value)}
+                />
+              </label>
+              <strong>:</strong>
+              <label>
+                <span>{text.horizontalRatio}</span>
+                <input
+                  min="1"
+                  step="1"
+                  type="number"
+                  value={customWidth}
+                  onChange={(event) => setCustomWidth(event.target.value)}
+                />
+              </label>
+              {isCustomRatioInvalid ? <p>{text.invalidRatio}</p> : null}
+            </div>
+          ) : null}
 
           <div className="export-image-preview">
             <div

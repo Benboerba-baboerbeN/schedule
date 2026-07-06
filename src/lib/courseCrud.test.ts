@@ -22,6 +22,7 @@ const baseCourse: Course = {
 
 const validForm: CourseFormValues = {
   owner: 'bob',
+  entryType: 'course',
   title: 'Physics',
   classroom: 'Lab 2',
   day: 3,
@@ -37,6 +38,7 @@ describe('course CRUD helpers', () => {
     expect(course).toMatchObject({
       id: 'new-id',
       owner: 'bob',
+      entryType: 'course',
       title: 'Physics',
       classroom: 'Lab 2',
       day: 3,
@@ -44,6 +46,23 @@ describe('course CRUD helpers', () => {
       endTime: '12:00',
       weekPattern: 'odd',
       icon: 'book',
+    })
+  })
+
+  it('creates an activity from form values with the activity icon', () => {
+    const activity = createCourse({
+      ...validForm,
+      entryType: 'activity',
+      title: '组会',
+      classroom: '会议室',
+    }, () => 'activity-id')
+
+    expect(activity).toMatchObject({
+      id: 'activity-id',
+      entryType: 'activity',
+      title: '组会',
+      classroom: '会议室',
+      icon: 'users',
     })
   })
 

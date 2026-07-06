@@ -30,7 +30,7 @@ type ToolbarProps = {
 }
 
 const text = {
-  addCourse: '添加课程',
+  addCourse: '添加课程活动',
   colors: '颜色设置',
   image: '导出图片',
   styles: '风格选项',

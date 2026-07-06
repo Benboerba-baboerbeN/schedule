@@ -1,7 +1,7 @@
 ﻿import type { CSSProperties } from 'react'
 import type { AppStyle, ColorSchemePreset, CourseTone, ScheduleTheme, ToneColor } from '../types/schedule'
 
-const tones: CourseTone[] = ['alice', 'bob', 'shared']
+const tones: CourseTone[] = ['alice', 'bob', 'shared', 'activity']
 
 export const defaultScheduleTheme: ScheduleTheme = {
   alice: {
@@ -24,6 +24,13 @@ export const defaultScheduleTheme: ScheduleTheme = {
     text: '#8f1414',
     headerBackground: '#e58f86',
     headerText: '#7a1010',
+  },
+  activity: {
+    background: '#f1f1f1',
+    border: '#141414',
+    text: '#141414',
+    headerBackground: '#d8d8d8',
+    headerText: '#141414',
   },
 }
 
@@ -51,6 +58,13 @@ export const scheduleThemeByStyle: Record<AppStyle, ScheduleTheme> = {
       headerBackground: '#f8e4b8',
       headerText: '#614313',
     },
+    activity: {
+      background: '#f4f0ff',
+      border: '#b9a7e8',
+      text: '#4b3a78',
+      headerBackground: '#e4dcfb',
+      headerText: '#3d3161',
+    },
   },
   paper: {
     alice: {
@@ -74,12 +88,31 @@ export const scheduleThemeByStyle: Record<AppStyle, ScheduleTheme> = {
       headerBackground: '#de8b77',
       headerText: '#5a2a22',
     },
+    activity: {
+      background: '#efe5c6',
+      border: '#7c6745',
+      text: '#4f4027',
+      headerBackground: '#d9c895',
+      headerText: '#463821',
+    },
   },
 }
 
 export const getDefaultScheduleTheme = (style: AppStyle = 'bauhaus') => scheduleThemeByStyle[style]
 
 export const colorSchemePresets: ColorSchemePreset[] = [
+  {
+    id: 'bauhaus-ink',
+    name: 'Bauhaus Ink',
+    description: '几何海报风格的中性墨色，适合活动、组会和实验安排。',
+    colors: {
+      background: '#f1f1f1',
+      border: '#141414',
+      text: '#141414',
+      headerBackground: '#d8d8d8',
+      headerText: '#141414',
+    },
+  },
   {
     id: 'bauhaus-blue',
     name: 'Bauhaus Blue',
@@ -213,17 +246,22 @@ export const parseScheduleTheme = (value: unknown): ScheduleTheme | null => {
   }
 
   const theme = value as Partial<Record<CourseTone, unknown>>
-  if (!tones.every((tone) => isToneColor(theme[tone]))) {
+  if (!tones.every((tone) => theme[tone] === undefined || isToneColor(theme[tone]))) {
     return null
   }
 
-  return theme as ScheduleTheme
+  if (!isToneColor(theme.alice) || !isToneColor(theme.bob) || !isToneColor(theme.shared)) {
+    return null
+  }
+
+  return mergeScheduleTheme(theme as ScheduleTheme)
 }
 
 export const mergeScheduleTheme = (theme?: ScheduleTheme | null): ScheduleTheme => ({
   alice: { ...defaultScheduleTheme.alice, ...theme?.alice },
   bob: { ...defaultScheduleTheme.bob, ...theme?.bob },
   shared: { ...defaultScheduleTheme.shared, ...theme?.shared },
+  activity: { ...defaultScheduleTheme.activity, ...theme?.activity },
 })
 
 type ThemeStyle = CSSProperties & Record<`--${CourseTone}-${string}`, string>
@@ -244,4 +282,9 @@ export const createThemeStyle = (theme: ScheduleTheme): ThemeStyle => ({
   '--shared-text': theme.shared.text,
   '--shared-header-bg': theme.shared.headerBackground,
   '--shared-header-text': theme.shared.headerText,
+  '--activity-bg': theme.activity.background,
+  '--activity-border': theme.activity.border,
+  '--activity-text': theme.activity.text,
+  '--activity-header-bg': theme.activity.headerBackground,
+  '--activity-header-text': theme.activity.headerText,
 })

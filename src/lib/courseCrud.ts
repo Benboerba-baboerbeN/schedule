@@ -1,8 +1,9 @@
 import { timeToMinutes, timelineEndMinutes, timelineStartMinutes } from './schedule'
-import type { Course, Owner, WeekPattern } from '../types/schedule'
+import type { Course, CourseEntryType, Owner, WeekPattern } from '../types/schedule'
 
 export type CourseFormValues = {
   owner: Owner
+  entryType: CourseEntryType
   title: string
   classroom: string
   day: number
@@ -26,6 +27,9 @@ const iconRules = [
 
 export const getCourseIcon = (title: string) =>
   iconRules.find((rule) => title.includes(rule.keyword))?.icon ?? 'book'
+
+export const getEntryIcon = (title: string, entryType: CourseEntryType) =>
+  entryType === 'activity' ? 'users' : getCourseIcon(title)
 
 export const validateCourseForm = (values: CourseFormValues) => {
   const errors: string[] = []
@@ -53,13 +57,14 @@ export const createCourse = (
 ): Course => ({
   id: createId(),
   owner: values.owner,
+  entryType: values.entryType,
   title: values.title.trim(),
   classroom: values.classroom.trim(),
   day: values.day,
   startTime: values.startTime,
   endTime: values.endTime,
   weekPattern: values.weekPattern,
-  icon: getCourseIcon(values.title),
+  icon: getEntryIcon(values.title, values.entryType),
 })
 
 export const upsertCourse = (courses: Course[], course: Course) => {

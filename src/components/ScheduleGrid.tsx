@@ -3,7 +3,9 @@ import CourseCard from './CourseCard'
 import { weekDays } from '../data/mockSchedule'
 import {
   buildTimelineMarks,
+  getCourseCardScale,
   getCourseTimelinePlacement,
+  isCompactCourseCard,
   isCourseInTimeRange,
   timelineRowCount,
 } from '../lib/schedule'
@@ -21,7 +23,15 @@ type TimelineStyle = CSSProperties & {
   '--timeline-rows': number
 }
 
+type CoursePositionStyle = CSSProperties & {
+  '--course-auto-scale': number
+}
+
 const getTone = (course: Course, courses: Course[]): CourseTone => {
+  if ((course.entryType ?? 'course') === 'activity') {
+    return 'activity'
+  }
+
   const otherOwner = course.owner === 'alice' ? 'bob' : 'alice'
   const hasSharedCourse = courses.some(
     (otherCourse) =>
@@ -84,17 +94,23 @@ function DayTimeline({
             .filter((course) => course.owner === owner)
             .map((course) => {
               const placement = getCourseTimelinePlacement(course.startTime, course.endTime, timeRange)
+              const courseStyle: CoursePositionStyle = {
+                gridRow: `${placement.rowStart} / span ${placement.rowSpan}`,
+                '--course-auto-scale': getCourseCardScale(placement.rowSpan),
+              }
+              const compact = isCompactCourseCard(placement.rowSpan)
 
               return (
                 <div
                   className="course-position"
                   key={course.id}
-                  style={{ gridRow: `${placement.rowStart} / span ${placement.rowSpan}` }}
+                  style={courseStyle}
                 >
                   <CourseCard
                     course={course}
                     tone={getTone(course, courses)}
                     showTime
+                    compact={compact}
                     onClick={onCourseClick}
                   />
                 </div>

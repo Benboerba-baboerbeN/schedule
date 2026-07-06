@@ -21,18 +21,23 @@ type CourseEditorProps = {
 }
 
 const text = {
-  createTitle: '添加课程',
-  editTitle: '编辑课程',
+  createTitle: '添加课程活动',
+  editTitle: '编辑课程活动',
+  courseOption: '添加课程',
+  activityOption: '添加活动',
   owner: '所属人',
-  title: '课程名',
-  classroom: '教室',
+  courseTitle: '课程名',
+  activityTitle: '活动名',
+  coursePlace: '教室',
+  activityPlace: '地点',
   day: '星期',
   startTime: '开始时间',
   endTime: '结束时间',
   weekPattern: '周次',
   save: '保存',
   cancel: '取消',
-  delete: '删除课程',
+  deleteCourse: '删除课程',
+  deleteActivity: '删除活动',
   everyWeek: '每周',
   oddWeek: '单周',
   evenWeek: '双周',
@@ -40,6 +45,7 @@ const text = {
 
 const defaultValues: CourseFormValues = {
   owner: 'alice',
+  entryType: 'course',
   title: '',
   classroom: '',
   day: 1,
@@ -52,6 +58,7 @@ const toFormValues = (course?: Course): CourseFormValues =>
   course
     ? {
         owner: course.owner,
+        entryType: course.entryType ?? 'course',
         title: course.title,
         classroom: course.classroom,
         day: course.day,
@@ -90,7 +97,7 @@ function CourseEditor({ course, mode, onClose, onDelete, people, onSave }: Cours
     onSave({
       ...nextCourse,
       id: course?.id ?? nextCourse.id,
-      icon: course?.icon ?? nextCourse.icon,
+      icon: (course?.entryType ?? 'course') === values.entryType ? course?.icon ?? nextCourse.icon : nextCourse.icon,
     })
   }
 
@@ -123,6 +130,17 @@ function CourseEditor({ course, mode, onClose, onDelete, people, onSave }: Cours
           ) : null}
 
           <label>
+            <span>类型</span>
+            <select
+              value={values.entryType}
+              onChange={(event) => updateValue('entryType', event.target.value as CourseFormValues['entryType'])}
+            >
+              <option value="course">{text.courseOption}</option>
+              <option value="activity">{text.activityOption}</option>
+            </select>
+          </label>
+
+          <label>
             <span>{text.owner}</span>
             <select
               value={values.owner}
@@ -134,20 +152,20 @@ function CourseEditor({ course, mode, onClose, onDelete, people, onSave }: Cours
           </label>
 
           <label className="editor-field--wide">
-            <span>{text.title}</span>
+            <span>{values.entryType === 'activity' ? text.activityTitle : text.courseTitle}</span>
             <input
               value={values.title}
               onChange={(event) => updateValue('title', event.target.value)}
-              placeholder={text.title}
+              placeholder={values.entryType === 'activity' ? '例如：组会、实验' : text.courseTitle}
             />
           </label>
 
           <label className="editor-field--wide">
-            <span>{text.classroom}</span>
+            <span>{values.entryType === 'activity' ? text.activityPlace : text.coursePlace}</span>
             <input
               value={values.classroom}
               onChange={(event) => updateValue('classroom', event.target.value)}
-              placeholder={text.classroom}
+              placeholder={values.entryType === 'activity' ? '例如：会议室、实验室' : text.coursePlace}
             />
           </label>
 
@@ -208,7 +226,7 @@ function CourseEditor({ course, mode, onClose, onDelete, people, onSave }: Cours
           <footer className="editor-actions">
             {mode === 'edit' && course ? (
               <button className="danger-button" type="button" onClick={handleDelete}>
-                {text.delete}
+                {(course.entryType ?? 'course') === 'activity' ? text.deleteActivity : text.deleteCourse}
               </button>
             ) : null}
             <button className="secondary-button" type="button" onClick={onClose}>

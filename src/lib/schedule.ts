@@ -52,6 +52,14 @@ export const getCourseTimelinePlacement = (
   return { rowStart, rowSpan }
 }
 
+export const getCourseCardScale = (rowSpan: number) => {
+  const normalizedSpan = Number.isFinite(rowSpan) ? rowSpan : 0
+
+  return Math.max(0.56, Math.min(1, normalizedSpan / 16))
+}
+
+export const isCompactCourseCard = (rowSpan: number) => rowSpan <= 12
+
 export const buildTimelineMarks = (timeRange: TimeRange = defaultTimeRange) =>
   Array.from({ length: timelineRowCount(timeRange) + 1 }, (_, index) => {
     const rowCount = timelineRowCount(timeRange)

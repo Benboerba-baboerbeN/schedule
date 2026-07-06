@@ -13,6 +13,7 @@ import type {
   AppStyle,
   AppFont,
   Course,
+  CourseEntryType,
   Owner,
   PeopleIds,
   PeopleNames,
@@ -52,6 +53,7 @@ type SavedScheduleOptions = {
 }
 
 const owners: Owner[] = ['alice', 'bob']
+const entryTypes: CourseEntryType[] = ['course', 'activity']
 const weekPatterns: WeekPattern[] = ['all', 'odd', 'even']
 const allowedSteps = [5]
 
@@ -95,6 +97,7 @@ const isCourse = (value: unknown): value is Course => {
   return (
     typeof value.id === 'string' &&
     owners.includes(value.owner as Owner) &&
+    (value.entryType === undefined || entryTypes.includes(value.entryType as CourseEntryType)) &&
     typeof value.title === 'string' &&
     typeof value.classroom === 'string' &&
     typeof value.day === 'number' &&
@@ -106,6 +109,11 @@ const isCourse = (value: unknown): value is Course => {
     typeof value.icon === 'string'
   )
 }
+
+const normalizeCourse = (course: Course): Course => ({
+  ...course,
+  entryType: course.entryType ?? 'course',
+})
 
 const isTimeRange = (value: unknown): value is TimeRange => {
   if (!isRecord(value)) {
@@ -135,7 +143,7 @@ export const createSavedScheduleState = (
   title,
   people: typeof options === 'string' ? defaultPeopleNames : normalizePeopleNames(options.people),
   peopleIds: typeof options === 'string' ? createDefaultPeopleIds() : normalizePeopleIds(options.peopleIds),
-  courses,
+  courses: courses.map(normalizeCourse),
   theme: typeof options === 'string' ? defaultScheduleTheme : options.theme ?? defaultScheduleTheme,
   appStyle: typeof options === 'string' ? defaultAppStyle : options.appStyle ?? defaultAppStyle,
   appFont: typeof options === 'string' ? 'style-default' : options.appFont ?? 'style-default',
@@ -213,7 +221,7 @@ export const parseScheduleState = (raw: string): SavedScheduleState | null => {
       title: parsed.title,
       people,
       peopleIds,
-      courses: parsed.courses,
+      courses: parsed.courses.map(normalizeCourse),
       theme: mergeScheduleTheme(theme),
       appStyle,
       appFont,

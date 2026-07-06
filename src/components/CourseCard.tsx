@@ -42,16 +42,23 @@ type CourseCardProps = {
   course: Course
   tone: CourseTone
   showTime?: boolean
+  compact?: boolean
   onClick?: (course: Course) => void
 }
 
-function CourseCard({ course, tone, showTime = false, onClick }: CourseCardProps) {
+function CourseCard({ course, tone, showTime = false, compact = false, onClick }: CourseCardProps) {
   const Icon = icons[course.icon as keyof typeof icons] ?? BookOpen
   const weekLabel = getWeekPatternLabel(course.weekPattern)
 
   return (
     <button
-      className={`course-card course-card--${tone}`}
+      className={[
+        'course-card',
+        `course-card--${tone}`,
+        compact ? 'course-card--compact' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
       type="button"
       onClick={() => onClick?.(course)}
     >
@@ -65,7 +72,9 @@ function CourseCard({ course, tone, showTime = false, onClick }: CourseCardProps
         </p>
       ) : null}
       <p>{course.classroom}</p>
-      <Icon aria-hidden="true" className="course-card__icon" size={22} strokeWidth={1.8} />
+      {compact ? null : (
+        <Icon aria-hidden="true" className="course-card__icon" size={22} strokeWidth={1.8} />
+      )}
     </button>
   )
 }

@@ -27,7 +27,7 @@ const fields: ColorField[] = [
   { key: 'headerText', label: '表头文字' },
 ]
 
-const tones: CourseTone[] = ['alice', 'bob', 'shared']
+const tones: CourseTone[] = ['alice', 'bob', 'shared', 'activity']
 
 function ColorSettings({ appStyle, font, theme, people, onFontChange, onChange, onClose }: ColorSettingsProps) {
   useEscapeClose(onClose)
@@ -57,6 +57,7 @@ function ColorSettings({ appStyle, font, theme, people, onFontChange, onChange, 
     alice: people.alice,
     bob: people.bob,
     shared: '共同课程',
+    activity: '活动',
   }
 
   return (

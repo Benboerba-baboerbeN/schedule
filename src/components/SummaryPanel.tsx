@@ -11,6 +11,7 @@ const text = {
   aliceCourse: '\u7684\u8bfe\u7a0b',
   bobCourse: '\u7684\u8bfe\u7a0b',
   sharedCourse: '\u4e24\u4eba\u5171\u6709\u7684\u8bfe\u7a0b',
+  activity: '活动',
   freeTime: '\u7a7a\u95f2\u65f6\u95f4',
   currentEmpty: '\u5f53\u524d\u7a7a\u95f2\u5355\u5143\u683c',
 }
@@ -26,6 +27,7 @@ function SummaryPanel({ cells, people }: SummaryPanelProps) {
           <li><span className="legend-swatch legend-swatch--alice" />{people.alice} {text.aliceCourse}</li>
           <li><span className="legend-swatch legend-swatch--bob" />{people.bob} {text.bobCourse}</li>
           <li><span className="legend-swatch legend-swatch--shared" />{text.sharedCourse}</li>
+          <li><span className="legend-swatch legend-swatch--activity" />{text.activity}</li>
           <li><span className="legend-swatch legend-swatch--empty" />{text.freeTime}</li>
         </ul>
       </div>
