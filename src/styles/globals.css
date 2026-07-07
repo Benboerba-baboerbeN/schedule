@@ -273,6 +273,8 @@ h1 {
   margin: 0 auto;
   overflow-x: auto;
   overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid var(--line);
   border-radius: 8px;
   background:
@@ -280,6 +282,22 @@ h1 {
   box-shadow:
     0 18px 45px rgb(15 23 42 / 7%),
     0 1px 2px rgb(15 23 42 / 5%);
+}
+
+.schedule-shell::-webkit-scrollbar {
+  height: 10px;
+}
+
+.schedule-shell::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgb(15 23 42 / 6%);
+}
+
+.schedule-shell::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgb(15 23 42 / 28%);
+  background-clip: content-box;
 }
 
 .schedule-grid {
@@ -2759,23 +2777,17 @@ h1 {
 
 @media (max-width: 760px) {
   .schedule-shell {
-    overflow-x: hidden;
+    max-width: 100%;
   }
 
   .schedule-grid {
-    width: 1360px;
     min-width: 1360px;
-    zoom: 0.54;
   }
 }
 
 @media (max-width: 640px) {
   .person-title { max-width: 5em; }
   .tool-button { max-width: 150px; }
-
-  .schedule-grid {
-    zoom: 0.45;
-  }
 
   .editor-form {
     grid-template-columns: 1fr;
@@ -2787,17 +2799,5 @@ h1 {
 
   .danger-button {
     margin-right: 0;
-  }
-}
-
-@media (max-width: 480px) {
-  .schedule-grid {
-    zoom: 0.34;
-  }
-}
-
-@media (max-width: 390px) {
-  .schedule-grid {
-    zoom: 0.28;
   }
 }
