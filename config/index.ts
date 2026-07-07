@@ -13,7 +13,7 @@ export default defineConfig({
     828: 1.81 / 2,
   },
   sourceRoot: 'miniapp/src',
-  outputRoot: 'dist/weapp',
+  outputRoot: 'dist-weapp',
   framework: 'react',
   compiler: 'webpack5',
   compile: {
